@@ -1,6 +1,6 @@
 package com.broers.prueba_tecnica.user.presentation;
 
-import com.broers.prueba_tecnica.constants.EndpointsConstants;
+import com.broers.prueba_tecnica.utils.constants.EndpointsConstants;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,11 +1,13 @@
 package com.broers.prueba_tecnica.user.presentation;
 
-import com.broers.prueba_tecnica.constants.EndpointsConstants;
+import com.broers.prueba_tecnica.utils.constants.EndpointsConstants;
 import com.broers.prueba_tecnica.security.auth.presentation.dto.AuthResponse;
 import com.broers.prueba_tecnica.security.auth.presentation.payload.AuthCreateUserRequest;
 import com.broers.prueba_tecnica.security.auth.presentation.payload.AuthLoginRequest;
 import com.broers.prueba_tecnica.security.auth.service.AuthService;
-import io.swagger.v3.oas.annotations.Hidden;
+import com.broers.prueba_tecnica.utils.exceptions.BadRequestException;
+import com.broers.prueba_tecnica.utils.exceptions.ConflictException;
+import com.broers.prueba_tecnica.utils.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,7 +18,6 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,11 +32,22 @@ public class AuthController {
             description = "Registra un nuevo usuario con nombre completo y correo electrónico")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Usuario registrado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Error en la solicitud de registro")
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud de registro"),
+            @ApiResponse(responseCode = "409", description = "El correo electrónico ya está registrado")
     })
     @PostMapping(EndpointsConstants.ENDPOINT_SIGNUP)
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody AuthCreateUserRequest userRequest) {
-        return new ResponseEntity<>(this.authService.register(userRequest), HttpStatus.CREATED);
+        try {
+            return new ResponseEntity<>(this.authService.register(userRequest), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        } catch (Exception e) {
+            // Si la excepción indica que el email ya existe
+            if (e.getMessage() != null && e.getMessage().contains("correo ya existe")) {
+                throw new ConflictException("El correo electrónico ya está registrado");
+            }
+            throw e;
+        }
     }
 
     @Operation(summary = "Verificar correo electrónico",
@@ -46,7 +58,11 @@ public class AuthController {
     })
     @GetMapping(EndpointsConstants.ENDPOINT_VERIFY_EMAIL)
     public ResponseEntity<AuthResponse> verifyEmail(@RequestParam String token) {
-        return new ResponseEntity<>(this.authService.verifyEmail(token), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(this.authService.verifyEmail(token), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Token inválido o expirado: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "Establecer contraseña",
@@ -59,7 +75,11 @@ public class AuthController {
     public ResponseEntity<AuthResponse> setPassword(
             @RequestParam String token,
             @RequestParam @NotBlank String password) {
-        return new ResponseEntity<>(this.authService.setPassword(token, password), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(this.authService.setPassword(token, password), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Error al establecer la contraseña: " + e.getMessage());
+        }
     }
 
     // Login
@@ -75,7 +95,11 @@ public class AuthController {
     })
     @PostMapping(EndpointsConstants.ENDPOINT_LOGIN)
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid AuthLoginRequest userRequest) {
-        return new ResponseEntity<>(this.authService.login(userRequest), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(this.authService.login(userRequest), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Credenciales inválidas: " + e.getMessage());
+        }
     }
 
     // Password recovery
@@ -88,7 +112,11 @@ public class AuthController {
     })
     @PostMapping(EndpointsConstants.ENDPOINT_REQUEST_PASSWORD_RECOVERY)
     public ResponseEntity<AuthResponse> requestPasswordRecovery(@RequestParam @Email String email) {
-        return new ResponseEntity<>(this.authService.requestPasswordRecovery(email), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(this.authService.requestPasswordRecovery(email), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new ResourceNotFoundException("Usuario con email " + email + " no encontrado");
+        }
     }
 
     @Operation(summary = "Restablecer contraseña",
@@ -101,8 +129,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> resetPassword(
             @RequestParam String token,
             @RequestParam @NotBlank String newPassword) {
-        return new ResponseEntity<>(this.authService.resetPassword(token, newPassword), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(this.authService.resetPassword(token, newPassword), HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Token inválido o expirado: " + e.getMessage());
+        }
     }
-
-
 }

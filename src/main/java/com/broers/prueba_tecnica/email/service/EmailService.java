@@ -1,6 +1,6 @@
 package com.broers.prueba_tecnica.email.service;
 
-import com.broers.prueba_tecnica.constants.EndpointsConstants;
+import com.broers.prueba_tecnica.utils.constants.EndpointsConstants;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;

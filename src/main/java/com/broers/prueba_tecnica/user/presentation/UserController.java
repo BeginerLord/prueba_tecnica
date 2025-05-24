@@ -1,8 +1,9 @@
 package com.broers.prueba_tecnica.user.presentation;
 
-import com.broers.prueba_tecnica.constants.EndpointsConstants;
+import com.broers.prueba_tecnica.utils.constants.EndpointsConstants;
 import com.broers.prueba_tecnica.user.persistence.entities.UserEntity;
 import com.broers.prueba_tecnica.user.persistence.repositories.UserRepository;
+import com.broers.prueba_tecnica.utils.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -33,7 +34,8 @@ public class UserController {
             description = "Obtiene la información del usuario autenticado")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Perfil obtenido exitosamente"),
-            @ApiResponse(responseCode = "401", description = "No autorizado, se requiere autenticación")
+            @ApiResponse(responseCode = "401", description = "No autorizado, se requiere autenticación"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
     })
     @GetMapping("/profile")
     @PreAuthorize("hasAuthority('ROLE_USER')")
@@ -42,7 +44,7 @@ public class UserController {
         String email = authentication.getName();
 
         UserEntity user = userRepository.findUserEntityByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario con email " + email + " no encontrado"));
 
         UserDto userDto = UserDto.builder()
                 .uuid(user.getUuid())
@@ -57,12 +59,19 @@ public class UserController {
             description = "Obtiene la lista de todos los usuarios (solo para administradores)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de usuarios obtenida exitosamente"),
-            @ApiResponse(responseCode = "403", description = "Acceso denegado, se requiere rol de administrador")
+            @ApiResponse(responseCode = "403", description = "Acceso denegado, se requiere rol de administrador"),
+            @ApiResponse(responseCode = "404", description = "No se encontraron usuarios")
     })
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<List<UserDto>> getAllUsers() {
-        List<UserDto> users = userRepository.findAll().stream()
+        List<UserEntity> userEntities = userRepository.findAll();
+
+        if (userEntities.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontraron usuarios");
+        }
+
+        List<UserDto> users = userEntities.stream()
                 .map(user -> UserDto.builder()
                         .uuid(user.getUuid())
                         .nombreCompleto(user.getNombreCompleto())
@@ -84,7 +93,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<UserDto> getUserByUuid(@PathVariable UUID uuid) {
         UserEntity user = userRepository.findByUuid(uuid)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario con uuid " + uuid + " no encontrado"));
 
         UserDto userDto = UserDto.builder()
                 .uuid(user.getUuid())

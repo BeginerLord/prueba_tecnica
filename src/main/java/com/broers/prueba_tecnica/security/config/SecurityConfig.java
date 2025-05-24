@@ -1,6 +1,6 @@
 package com.broers.prueba_tecnica.security.config;
 
-import com.broers.prueba_tecnica.constants.EndpointsConstants;
+import com.broers.prueba_tecnica.utils.constants.EndpointsConstants;
 import com.broers.prueba_tecnica.security.utils.jwt.JwtTokenProvider;
 import com.broers.prueba_tecnica.security.utils.jwt.JwtTokenValidator;
 import lombok.RequiredArgsConstructor;

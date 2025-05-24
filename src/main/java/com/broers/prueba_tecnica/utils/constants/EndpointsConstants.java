@@ -1,4 +1,4 @@
-package com.broers.prueba_tecnica.constants;
+package com.broers.prueba_tecnica.utils.constants;
 
 public class EndpointsConstants {
     private EndpointsConstants() {
