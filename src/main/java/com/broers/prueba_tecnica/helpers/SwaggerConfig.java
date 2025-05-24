@@ -31,10 +31,6 @@ import io.swagger.v3.oas.annotations.servers.Server;
                 @Server(
                         description = "Servidor de Desarrollo",
                         url = "http://localhost:8080"
-                ),
-                @Server(
-                        description = "Servidor de Producción",
-                        url = "http://academico.example.com"
                 )
         },
         security = {
